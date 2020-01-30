@@ -3,7 +3,6 @@ import './styles.css';
 
 function DevItem({dev}) {
 
-
     return (
         <li key={dev.id} className="dev-item">
         <header>
