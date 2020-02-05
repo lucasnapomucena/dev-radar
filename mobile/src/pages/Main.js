@@ -4,12 +4,13 @@ import MapView, { Marker, Callout } from 'react-native-maps';
 import {requestPermissionsAsync, getCurrentPositionAsync } from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import api from '../services/api';
-
+import {connect, disconnect} from '../services/socket';
 
 function Main({ navigation }) {
 
     const [devs, setDevs] = useState([]);
     const [currentRegion, setCurrentRegion] = useState(null);
+    const [techs, setTechs] = useState([]);
 
     useEffect(() => {
         async function loadInitialPosition() {
@@ -33,6 +34,16 @@ function Main({ navigation }) {
 
         loadInitialPosition();
     }, []);
+
+    function setupWebsocket() {
+        const { latitude, longitude} = currentRegion;
+
+        connect(
+            latitude,
+            longitude,
+            techs
+        );
+    }
     async function loadDevs() {
 
         const { latitude, longitude } = currentRegion;
@@ -40,11 +51,11 @@ function Main({ navigation }) {
             params: {
                latitude,
                longitude,
-               techs: 'ReactJS' 
+               techs
             }
         });
-
-        setDevs(response.data);
+        setDevs(response.data.devs);
+        setupWebsocket();
     }
 
     function handleRegionChanged(region) {
@@ -60,9 +71,9 @@ function Main({ navigation }) {
     <MapView  onRegionChangeComplete={handleRegionChanged} inititalRegion={currentRegion} style={styles.map}>
             {devs.map(dev => (
                         <Marker key={dev._id} coordinate={{
-                        latitude: dev.location.coordinates[0], 
-                        longitude: dev.location.coordinates[1]}}>
-                        <Image style={ styles.avatar }source={{uri: dev.avatar_url}} />
+                        latitude: dev.location.coordinates[1], 
+                        longitude: dev.location.coordinates[0]}}>
+                        <Image style={ styles.avatar } source={{uri: dev.avatar_url}} />
                         <Callout onPress={() => {
                             //navegação
                             navigation.navigate('Profile', {github_username: dev.github_username})
@@ -80,7 +91,10 @@ function Main({ navigation }) {
                 <TextInput style={styles.searchInput} placeholder="Buscar devs por techs... "
                  placeholderTextColor="#999"
                  autoCapitalize="words"
-                 autoCorrect={false} />
+                 autoCorrect={false}
+                 value={techs}
+                 onChangeText={setTechs} 
+                 />
 
             <TouchableOpacity onPress={loadDevs} style={styles.loadButton}>
                 <MaterialIcons name="my-location" size={20} color="#fff" />
